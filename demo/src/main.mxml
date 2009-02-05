@@ -1,0 +1,222 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+This file is part of seesmic-as3-xmpp.
+Copyright (c)2009 Seesmic, Inc
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+-->
+
+<mx:WindowedApplication xmlns:mx="http://www.adobe.com/2006/mxml" layout="vertical" width='700' height='600'>
+<mx:Script>
+	<![CDATA[
+		//import seesmic-as3-xmpp
+		import com.seesmic.as3.xmpp.*
+		//import the tls libs
+		import com.hurlant.crypto.tls.*;
+		//import the plugins you need
+		import com.seesmic.as3.xmpp.xep.publish_subscribe.PublishSubscribe;
+		import com.seesmic.as3.xmpp.xep.publish_subscribe.PubSubEvent;
+		
+		
+		import mx.collections.ArrayCollection;
+		import flash.xml.XMLNode;
+		import flash.events.*;
+		import flash.utils.Dictionary;
+		import mx.events.*;		
+		
+		public var conn:XMPP;
+		public var roster:ArrayCollection = new ArrayCollection();
+		private function connect():void
+		{
+			//conn = new XMPP(jidInput.text,passInput.text,serverInput.text); //<-- this still works as well.
+			// setup the class
+			conn = new XMPP();
+			//you could do these as separate conn. lines
+			conn.setJID(jidInput.text).setPassword(passInput.text).setServer(serverInput.text);
+			
+			//Set up the listeners for all of the event types you care about
+			conn.addEventListener(XMPPEvent.MESSAGE, handleMessage);
+			conn.addEventListener(XMPPEvent.SESSION, handleSession);
+			conn.addEventListener(XMPPEvent.SECURE, handleSecure);
+			conn.addEventListener(XMPPEvent.AUTH_SUCCEEDED, handleAuthSucceed);
+			conn.addEventListener(XMPPEvent.AUTH_FAILED, handleAuthFailed);
+			conn.addEventListener(XMPPEvent.PRESENCE_AVAILABLE, handlePresence);
+			conn.addEventListener(XMPPEvent.PRESENCE_UNAVAILABLE, handlePresenceUnAvail);
+			conn.addEventListener(XMPPEvent.PRESENCE_ERROR, handlePresenceError);
+			conn.addEventListener(XMPPEvent.PRESENCE_SUBSCRIBE, handlePresenceSubscribe);
+			conn.addEventListener(XMPPEvent.ROSTER_ITEM, handleRoster);
+			conn.socket.addEventListener(StreamEvent.DISCONNECTED, handleDisconnected);
+			conn.socket.addEventListener(StreamEvent.CONNECT_FAILED, handleConnectFailed);
+			conn.socket.addEventListener(StreamEvent.CONNECTED, handleConnected);
+			
+			// you can also load plugins for non-core XMPP features (see http://xmpp.org/extensions)
+			conn.addPlugin(new PublishSubscribe());
+			//set up your plugin's events
+			conn.plugin['pubsub'].addEventListener(PubSubEvent.ITEM, handlePubSubItem);
+			conn.plugin['pubsub'].addEventListener(PubSubEvent.RETRACT, handlePubSubRetract);
+			
+			roster.removeAll();
+			
+			//We have to manually pass in the hurlant classes so as to keep them from being a dependency
+			//make sure that you did import com.hurlant.crypto.tls.*;
+			conn.setupTLS(TLSEvent, TLSConfig, TLSEngine, TLSSocket);
+			
+			//Once you connect(), events should start flowing.
+			conn.connect();
+		}
+		
+		private function disconnect():void
+		{
+			conn.disconnect();
+		}
+		
+		private function send():void {
+			conn.sendMessage(toInput.text, messageInput.text);
+			messageOutput.text += conn.fulljid.toString() + ': ' + messageInput.text + '\n';
+			messageInput.text = '';	
+		}
+		
+		private function handlePubSubItem(e:PubSubEvent):void {
+			//You'd probably actually do something with the pubsub event here
+			eventOutput.text += "Received PubSub Item\n";
+		}
+		
+		private function handlePubSubRetract(e:PubSubEvent):void {
+			eventOutput.text += "Received PubSub Retract\n";
+		}
+		
+		private function handleMessage(e:XMPPEvent):void {
+			//the XMPPEvent contains .stanza, which is the stanza instance of whatever caused the event
+			if(!e.stanza.body) return;
+			messageOutput.text += e.stanza.from + ': ' + e.stanza.body + '\n';
+			toInput.text = e.stanza.from;
+			messageInput.setFocus();
+			if(e.stanza.hasPlugin('twitter')) {
+				// documentation on this to come
+				eventOutput.text += e.stanza.p.twitter.link + "\n";
+			}
+		}
+		
+		private function handlePresence(e:XMPPEvent):void {
+			messageOutput.text += e.stanza.from + '[' + e.stanza.type + '] ' + e.stanza.status + "\n";
+			eventOutput.text += e.stanza.from.getBareJID() + " is online.\n"; 
+		}
+		
+		private function handlePresenceUnAvail(e:XMPPEvent):void {
+			eventOutput.text += e.stanza.from.getBareJID() + " is offline.\n"; 
+		}
+		
+		private function handlePresenceError(e:XMPPEvent):void {
+			eventOutput.text += e.stanza.from.getBareJID() + " presence error event.\n"; 
+		}
+		
+		private function handlePresenceSubscribe(e:XMPPEvent):void {
+			eventOutput.text += e.stanza.from.getBareJID() + " presence subscription event.\n"; 
+		}
+		
+		private function handleRoster(e:XMPPEvent):void {
+			var name:String = e.stanza['nick'];
+			if(!name) name = e.stanza['jid'];
+			var item:Dictionary = conn.roster.items[e.stanza.jid];
+			var found:Boolean = false;
+			for(var index:String in roster) {
+				if(e.stanza.jid == roster[index]['jid']) {
+					roster[index] = item;
+					found = true;
+					break;
+				}
+			}
+			if(!found) roster.addItem(item);
+		}
+		
+		private function handleSession(e:XMPPEvent):void {
+			//you pretty much always want to do this
+			eventOutput.text += "Session Started\n";
+			conn.getRoster();
+			conn.sendPresence();
+		}
+		
+		private function handleSecure(e:XMPPEvent):void {
+			eventOutput.text += "Encryption Enabled\n";
+		}
+		
+		private function handleAuthSucceed(e:XMPPEvent):void {
+			eventOutput.text += "Authorized\n";
+		}
+		
+		private function breakit():void {
+			// send invalid XML, useful for testing auto-reconnect from stream error
+			conn.send("<howdy></hi>");
+		}
+		
+		private function handleAuthFailed(e:XMPPEvent):void {
+			eventOutput.text += "Authorization Failed\n";
+		}
+		
+		private function handleDisconnected(e:StreamEvent):void {
+			eventOutput.text += "Disconnected\n";
+		}
+		
+		private function handleConnected(e:StreamEvent):void {
+			eventOutput.text += "Connected\n";
+		}
+		
+		private function handleConnectFailed(e:StreamEvent):void {
+			eventOutput.text += "Failed to connect\n";
+		}
+		
+		private function rosterClickEvent(e:ListEvent):void {
+			//trace(roster[e.rowIndex]['jid']);
+			toInput.text = roster[e.rowIndex]['jid'];
+			messageInput.setFocus();
+			var status:Dictionary = conn.roster.getHighestStatus(roster[e.rowIndex]['jid']);
+			statusOutput.text = roster[e.rowIndex]['name'] + ' [' + status['type'] + '] ' + status['status'] + "\n";
+		}
+	]]>
+</mx:Script>
+<mx:HBox>
+	
+	<mx:VBox>
+		<mx:HBox>
+			<mx:Label text="Jabber ID:" /><mx:TextInput id="jidInput" enter="connect()" />
+		</mx:HBox>
+		<mx:HBox>
+			<mx:Label text="Password:" /><mx:TextInput id='passInput' displayAsPassword='true' enter='connect()' />
+		</mx:HBox>
+		<mx:HBox>
+			<mx:Label text="Server (optional):"/><mx:TextInput id='serverInput' enter='connect()' />
+		</mx:HBox>
+		<mx:HBox>
+			<mx:Button label='Connect' click='connect()' />
+			<mx:Button label='Disconnect' click='disconnect()' />
+			<mx:Button label='Break It' click='breakit()' />
+		</mx:HBox>
+		<mx:TextArea width='400' height='240' id='messageOutput' liveScrolling="true"  />
+		<mx:TextInput width='400' id='messageInput' enter='send()' />
+		<mx:HBox>
+			<mx:Label text="To JID:" />
+			<mx:TextInput id='toInput' />
+			<mx:Button label='Send' click='send()' />
+		</mx:HBox>
+		<mx:HBox>
+			<mx:Label id="statusOutput" text="" />
+		</mx:HBox>
+		<mx:TextArea width='400' height='100' id='eventOutput' liveScrolling="true" />
+	</mx:VBox>
+	<mx:List id="rosterList" width="200" height="550" dataProvider="{roster}" labelField='name' change="rosterClickEvent(event)" />
+</mx:HBox>
+
+
+</mx:WindowedApplication>
