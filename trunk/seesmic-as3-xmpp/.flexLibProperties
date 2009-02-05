@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<flexLibProperties version="1">
+<includeClasses>
+<classEntry path="com.seesmic.as3.xmpp.IdHandler"/>
+<classEntry path="com.seesmic.as3.xmpp.IqStanza"/>
+<classEntry path="com.seesmic.as3.xmpp.JID"/>
+<classEntry path="com.seesmic.as3.xmpp.MaskHandler"/>
+<classEntry path="com.seesmic.as3.xmpp.MessageStanza"/>
+<classEntry path="com.seesmic.as3.xmpp.PresenceStanza"/>
+<classEntry path="com.seesmic.as3.xmpp.QueryStanza"/>
+<classEntry path="com.seesmic.as3.xmpp.Roster"/>
+<classEntry path="com.seesmic.as3.xmpp.Stanza"/>
+<classEntry path="com.seesmic.as3.xmpp.StanzaPlugin"/>
+<classEntry path="com.seesmic.as3.xmpp.StreamEvent"/>
+<classEntry path="com.seesmic.as3.xmpp.StreamSocket"/>
+<classEntry path="com.seesmic.as3.xmpp.XMLHandler"/>
+<classEntry path="com.seesmic.as3.xmpp.XMLStream"/>
+<classEntry path="com.seesmic.as3.xmpp.XMPP"/>
+<classEntry path="com.seesmic.as3.xmpp.XMPPEvent"/>
+<classEntry path="com.seesmic.as3.xmpp.XPathHandler"/>
+<classEntry path="com.seesmic.as3.xmpp.xep.Plugin"/>
+<classEntry path="com.seesmic.as3.xmpp.xep.publish_subscribe.PubSubEvent"/>
+<classEntry path="com.seesmic.as3.xmpp.xep.publish_subscribe.PublishSubscribe"/>
+</includeClasses>
+<includeResources/>
+<namespaceManifests/>
+</flexLibProperties>
