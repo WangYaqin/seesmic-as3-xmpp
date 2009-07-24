@@ -28,7 +28,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 		//import the plugins you need
 		import com.seesmic.as3.xmpp.xep.publish_subscribe.PublishSubscribe;
 		import com.seesmic.as3.xmpp.xep.publish_subscribe.PubSubEvent;
-		
+		import com.seesmic.as3.xmpp.xep.muc.MUC;
 		
 		import mx.collections.ArrayCollection;
 		import flash.xml.XMLNode;
@@ -48,6 +48,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 			
 			//Set up the listeners for all of the event types you care about
 			conn.addEventListener(XMPPEvent.MESSAGE, handleMessage);
+			conn.addEventListener(XMPPEvent.MESSAGE_MUC, handleMUCMessage);
 			conn.addEventListener(XMPPEvent.SESSION, handleSession);
 			conn.addEventListener(XMPPEvent.SECURE, handleSecure);
 			conn.addEventListener(XMPPEvent.AUTH_SUCCEEDED, handleAuthSucceed);
@@ -63,6 +64,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 			
 			// you can also load plugins for non-core XMPP features (see http://xmpp.org/extensions)
 			conn.addPlugin(new PublishSubscribe());
+			conn.addPlugin(new MUC());
 			//set up your plugin's events
 			conn.plugin['pubsub'].addEventListener(PubSubEvent.ITEM, handlePubSubItem);
 			conn.plugin['pubsub'].addEventListener(PubSubEvent.RETRACT, handlePubSubRetract);
@@ -107,6 +109,21 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 				// documentation on this to come
 				eventOutput.text += e.stanza.p.twitter.link + "\n";
 			}
+		}
+		
+		private function handleMUCMessage(e:XMPPEvent):void {
+			if(!e.stanza.body) return;
+			var roomjid:JID = JID(e.stanza.from);
+			messageOutput.text += roomjid.getResource() + ' in ' + roomjid.getBareJID() + ': ' + e.stanza.body + '\n';
+
+			//messageOutput.text += 'MUC: ' + e.stanza.from + ': ' + e.stanza.body + '\n';
+			toInput.text = e.stanza.from;
+			messageInput.setFocus();
+			if(e.stanza.hasPlugin('twitter')) {
+				// documentation on this to come
+				eventOutput.text += e.stanza.p.twitter.link + "\n";
+			}
+		
 		}
 		
 		private function handlePresence(e:XMPPEvent):void {
@@ -161,6 +178,10 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 			conn.send("<howdy></hi>");
 		}
 		
+		private function joinRoom():void {
+			conn.plugin['muc'].joinRoom('conference.jabber.org', 'fritzy-test', 'as3client');
+		}
+		
 		private function handleAuthFailed(e:XMPPEvent):void {
 			eventOutput.text += "Authorization Failed\n";
 		}
@@ -202,6 +223,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 			<mx:Button label='Connect' click='connect()' />
 			<mx:Button label='Disconnect' click='disconnect()' />
 			<mx:Button label='Break It' click='breakit()' />
+			<mx:Button label='JoinRoom' click='joinRoom()' />
 		</mx:HBox>
 		<mx:TextArea width='400' height='240' id='messageOutput' liveScrolling="true"  />
 		<mx:TextInput width='400' id='messageInput' enter='send()' />
