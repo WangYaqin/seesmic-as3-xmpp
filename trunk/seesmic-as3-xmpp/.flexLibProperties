@@ -21,6 +21,7 @@
 <classEntry path="com.seesmic.as3.xmpp.xep.Plugin"/>
 <classEntry path="com.seesmic.as3.xmpp.xep.publish_subscribe.PubSubEvent"/>
 <classEntry path="com.seesmic.as3.xmpp.xep.publish_subscribe.PublishSubscribe"/>
+<classEntry path="com.seesmic.as3.xmpp.xep.muc.MUC"/>
 </includeClasses>
 <includeResources/>
 <namespaceManifests/>
