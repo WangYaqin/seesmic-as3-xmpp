@@ -54,7 +54,7 @@ package com.seesmic.as3.xmpp
 			if(server && port) setup(server, port);
 		}
 		
-		public function setupTLS(event:Class, config:Class, engine:Class, socket:Class):void {
+		public function setupTLS(event:Class, config:Class, engine:Class, socket:Class, ignoreCommonName:Boolean=true, ignoreSelfSigned:Boolean=true, ignoreInvalidCert:Boolean=false):void {
 			tlspointers['socket'] = socket;
 			tlspointers['event'] = event;
 			tlspointers['engine'] = engine;
@@ -63,7 +63,7 @@ package com.seesmic.as3.xmpp
 			this.socket.tlsEngine = tlspointers['engine'];
 			this.socket.tlsEvent = tlspointers['event'];
 			this.socket.tlsSocket = tlspointers['socket'];
-			this.socket.setupTLS(event,config,engine,socket);
+			this.socket.setupTLS(event,config,engine,socket,ignoreCommonName, ignoreSelfSigned, ignoreInvalidCert);
 			use_tls = true;
 		}
 		

@@ -28,6 +28,9 @@ package com.seesmic.as3.xmpp
 	public class StreamSocket extends EventDispatcher
 	{
 		protected var callback:Function;
+		protected var _ignoreInvalidCert:Boolean = false;
+		protected var _ignoreCommonName:Boolean = true;
+		protected var _ignoreSelfSigned:Boolean = true;
 		public var buffer:String;
 		private var getXML:RegExp;
 		private var getTag:RegExp = /(?<=(\<))[a-zA-Z:]+/i;
@@ -77,7 +80,7 @@ package com.seesmic.as3.xmpp
 		
 		public function reconnect():void {
 			if(tlssocket) {
-				tlssocket.cleanupEventListeners();
+				//tlssocket.cleanupEventListeners();
 				tlssocket = null;
 			}
 			socket = new Socket();
@@ -85,11 +88,14 @@ package com.seesmic.as3.xmpp
 			socket.connect(host, port);
 		}
 		
-		public function setupTLS(event:Class, config:Class, engine:Class, socket:Class):void {
+		public function setupTLS(event:Class, config:Class, engine:Class, socket:Class, ignoreCommonName:Boolean=true, ignoreSelfSigned:Boolean=true, ignoreInvalidCert:Boolean=false):void {
 			this.tlsConfig = config;
 			this.tlsEngine = engine;
 			this.tlsEvent = event;
 			this.tlsSocket = socket;
+			this._ignoreInvalidCert = ignoreInvalidCert;
+			this._ignoreCommonName = ignoreCommonName;
+			this._ignoreSelfSigned = ignoreSelfSigned;
 			trace('setup called');
 		}
 		
@@ -98,6 +104,9 @@ package com.seesmic.as3.xmpp
 				trace(tlsConfig);
 				trace(tlsEngine);
 				var clientConfig:Object = new this.tlsConfig(this.tlsEngine.CLIENT);
+				clientConfig.ignoreCommonNameMismatch = this._ignoreCommonName;
+				clientConfig.trustAllCertificates = this._ignoreInvalidCert;
+				clientConfig.trustSelfSignedCertificates = this._ignoreSelfSigned;
 				encrypted = true;
 				tlssocket = new tlsSocket();
 				tlssocket.addEventListener(tlsEvent.READY, onTLSReady);
