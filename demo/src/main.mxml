@@ -73,7 +73,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 			
 			//We have to manually pass in the hurlant classes so as to keep them from being a dependency
 			//make sure that you did import com.hurlant.crypto.tls.*;
-			conn.setupTLS(TLSEvent, TLSConfig, TLSEngine, TLSSocket);
+			// args: TLSEvent, TLSConfig, TLSEngine, TLSSocket, ignore common name errors, ignore self signed cert errors, ignore all cert errors
+			conn.setupTLS(TLSEvent, TLSConfig, TLSEngine, TLSSocket, true, true, false);
 			
 			//Once you connect(), events should start flowing.
 			conn.connect();
